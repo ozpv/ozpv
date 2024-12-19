@@ -1,4 +1,4 @@
-use leptos::{ev, prelude::*, tachys::renderer::dom::Dom};
+use leptos::{ev, html, prelude::*, tachys::renderer::dom::Dom};
 use leptos_icons::Icon;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -26,65 +26,44 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 }
 
 #[component]
-fn ErrorPage() -> impl IntoView {
-    view! {
-        <div class="bg-black min-h-screen pt-24">
-            <h2 class="text-4xl text-white text-center pb-4">"Page not found."</h2>
-            <div class="flex justify-center">
-                <a href="/" class="flex justify-center bg-slate-800 text-white text-center rounded-full py-5 px-10 hover:bg-slate-600">
-                    "Return home"
-                </a>
-            </div>
-        </div>
-    }
-}
-
-#[component]
-fn Footer() -> impl IntoView {
-    view! {
-        <footer class="sticky top-full bg-black py-9">
-            <span class="block py-1.5 justify-center text-center text-xs text-white font-sans">"Copyleft (ɔ) 2024-2025 "
-                <a href="/" class="hover:underline hover:text-cyan-300">"ozpv"</a>
-                ". All Wrongs Reserved."
-            </span>
-        </footer>
-    }
-}
-
-#[component]
 fn HomePage() -> impl IntoView {
     use std::cmp::Ordering;
-    use std::rc::Rc;
-    use std::sync::Mutex;
 
+    let rustacean = NodeRef::<html::Div>::new();
     let left_eye = NodeRef::new();
     let right_eye = NodeRef::new();
 
-    let eyes = Rc::new(Mutex::new([
+    // set position of center of eye hole relative to parent
+    let eyes = [
         (right_eye, (260.0, 218.0)),
         (left_eye, (386.0, 218.0)),
-    ]));
+    ];
 
     // on mousemove
-    let binding = Rc::clone(&eyes);
-    let handle = window_event_listener(ev::mousemove, move |ev| {
-        let px = ev.page_x() as f64;
-        let py = ev.page_y() as f64;
-        binding
-            .lock()
-            .unwrap()
-            .iter()
-            .filter_map(|(eye, (x, y))| eye.get().map(|eye| (eye, (x, y))))
-            .for_each(|(eye, (x, y)): (HtmlImageElement, (&f64, &f64))| {
-                let dx = px - x;
-                let dy = py - y;
+    let mousemove_handle = window_event_listener(ev::mousemove, move |ev| {
+        let px = f64::from(ev.page_x());
+        let py = f64::from(ev.page_y());
+
+        let rect = rustacean
+            .get()
+            .expect("rustacean <div> to exist")
+            .get_bounding_client_rect();
+
+        let parent_x = rect.x();
+        let parent_y = rect.y();
+
+        eyes.iter()
+            .filter_map(|(eye, positions)| eye.get().map(|eye| (eye, positions)))
+            .for_each(|(eye, positions): (HtmlImageElement, &(f64, f64))| {
+                let dx = px - (positions.0+ parent_x);
+                let dy = py - (positions.1 + parent_y);
                 let r = dx.hypot(dy);
                 let sin = dx.abs() / r;
                 let cos = dy.abs() / r;
                 let A = 35.0;
 
-                let mut fx = *x;
-                let mut fy = *y;
+                let mut fx = positions.0;
+                let mut fy = positions.1;
 
                 match (dx.total_cmp(&0.0), dy.total_cmp(&0.0)) {
                     (Ordering::Greater, Ordering::Greater) | (Ordering::Equal, Ordering::Equal) => {
@@ -109,17 +88,17 @@ fn HomePage() -> impl IntoView {
             });
     });
 
-    on_cleanup(move || handle.remove());
+    on_cleanup(move || mousemove_handle.remove());
 
     view! {
         <div class="bg-black min-h-screen">
             <h1 class="text-8xl text-center text-white py-24">ozpv</h1>
-            <div class="relative w-[749px] h-[435px]" id="rustacean-image">
-                <img src="rustacean-no-eyes.png" id="rustacean" class="z-10 absolute"/>
+            <div class="relative w-[749px] h-[435px] m-auto translate-x-6" node_ref=rustacean>
+                <img src="rustacean-no-eyes.png" class="z-10 absolute"/>
                 <img src="rustacean-eye.png" class="z-0 absolute" style="left:260px;top:218px;" node_ref=right_eye/>
                 <img src="rustacean-eye.png" class="z-0 absolute" style="left:386px;top:218px;" node_ref=left_eye/>
             </div>
-            <div class="flex justify-center gap-5 pt-5">
+            <div class="flex justify-center gap-5 pt-14">
                 <a href="https://github.com/ozpv" class="p-2 rounded-sm transition-all ease-in duration-150 hover:-translate-y-px hover:bg-slate-800">
                     <Icon icon={icondata::SiGithub} width="32" height="32" {..} class="text-white" />
                 </a>
@@ -128,6 +107,32 @@ fn HomePage() -> impl IntoView {
                 </a>
             </div>
         </div>
+    }
+}
+
+#[component]
+fn ErrorPage() -> impl IntoView {
+    view! {
+        <div class="bg-black min-h-screen pt-24">
+            <h2 class="text-4xl text-white text-center pb-4">"Page not found."</h2>
+            <div class="flex justify-center">
+                <a href="/" class="flex justify-center bg-slate-800 text-white text-center rounded-full py-5 px-10 hover:bg-slate-600">
+                    "Return home"
+                </a>
+            </div>
+        </div>
+    }
+}
+
+#[component]
+fn Footer() -> impl IntoView {
+    view! {
+        <footer class="sticky top-full bg-black py-9">
+            <span class="block py-1.5 justify-center text-center text-xs text-white font-sans">"Copyleft (ɔ) 2024-2025 "
+                <a href="/" class="hover:underline hover:text-cyan-300">"ozpv"</a>
+                ". All Wrongs Reserved."
+            </span>
+        </footer>
     }
 }
 
