@@ -1,12 +1,11 @@
-use leptos::prelude::*;
+use leptos::{ev, prelude::*, tachys::renderer::dom::Dom};
 use leptos_icons::Icon;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
     StaticSegment,
 };
-use wasm_bindgen::{prelude::Closure, JsCast};
-use web_sys::UiEvent;
+use web_sys::HtmlImageElement;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -54,31 +53,29 @@ fn Footer() -> impl IntoView {
 
 #[component]
 fn HomePage() -> impl IntoView {
-    Effect::new(|| {
-        use std::cmp::Ordering;
-        use std::rc::Rc;
-        use std::sync::Mutex;
+    use std::cmp::Ordering;
+    use std::rc::Rc;
+    use std::sync::Mutex;
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
+    let left_eye = NodeRef::new();
+    let right_eye = NodeRef::new();
 
-        // the <img> elements
-        let left_eye = document.get_element_by_id("left-eye").unwrap();
-        let right_eye = document.get_element_by_id("right-eye").unwrap();
+    let eyes = Rc::new(Mutex::new([
+        (right_eye, (260.0, 218.0)),
+        (left_eye, (386.0, 218.0)),
+    ]));
 
-        // The tuple values must match the ones in the style attribute
-        // at least initially
-        let eyes = Rc::new(Mutex::new([
-            (right_eye, (260.0, 218.0)),
-            (left_eye, (386.0, 218.0)),
-        ]));
-
-        // on mousemove
-        let binding = Rc::clone(&eyes);
-        let mousemove_callback = Closure::<dyn FnMut(UiEvent)>::new(move |ev: UiEvent| {
-            let px = ev.page_x() as f64;
-            let py = ev.page_y() as f64;
-            binding.lock().unwrap().iter().for_each(|(eye, (x, y))| {
+    // on mousemove
+    let binding = Rc::clone(&eyes);
+    let handle = window_event_listener(ev::mousemove, move |ev| {
+        let px = ev.page_x() as f64;
+        let py = ev.page_y() as f64;
+        binding
+            .lock()
+            .unwrap()
+            .iter()
+            .filter_map(|(eye, (x, y))| eye.get().map(|eye| (eye, (x, y))))
+            .for_each(|(eye, (x, y)): (HtmlImageElement, (&f64, &f64))| {
                 let dx = px - x;
                 let dy = py - y;
                 let r = dx.hypot(dy);
@@ -108,39 +105,19 @@ fn HomePage() -> impl IntoView {
                     }
                 }
 
-                _ = eye.set_attribute("style", &format!("left:{fx}px;top:{fy}px;"));
+                Dom::set_attribute(&eye, "style", &format!("left:{fx}px;top:{fy}px;"));
             });
-        });
-
-        window
-            .add_event_listener_with_callback(
-                "mousemove",
-                mousemove_callback.as_ref().unchecked_ref(),
-            )
-            .unwrap();
-
-        // on resize
-        let binding = Rc::clone(&eyes);
-        let resize_callback = Closure::<dyn Fn()>::new(move || {
-            binding.lock().unwrap().iter().for_each(|_eye| {});
-        });
-
-        window
-            .add_event_listener_with_callback("resize", resize_callback.as_ref().unchecked_ref())
-            .unwrap();
-
-        // otherwise they will leak
-        resize_callback.forget();
-        mousemove_callback.forget();
     });
+
+    on_cleanup(move || handle.remove());
 
     view! {
         <div class="bg-black min-h-screen">
             <h1 class="text-8xl text-center text-white py-24">ozpv</h1>
             <div class="relative w-[749px] h-[435px]" id="rustacean-image">
                 <img src="rustacean-no-eyes.png" id="rustacean" class="z-10 absolute"/>
-                <img src="rustacean-eye.png" id="right-eye" class="z-0 absolute" style="left:260px;top:218px;"/>
-                <img src="rustacean-eye.png" id="left-eye" class="z-0 absolute" style="left:386px;top:218px;"/>
+                <img src="rustacean-eye.png" class="z-0 absolute" style="left:260px;top:218px;" node_ref=right_eye/>
+                <img src="rustacean-eye.png" class="z-0 absolute" style="left:386px;top:218px;" node_ref=left_eye/>
             </div>
             <div class="flex justify-center gap-5 pt-5">
                 <a href="https://github.com/ozpv" class="p-2 rounded-sm transition-all ease-in duration-150 hover:-translate-y-px hover:bg-slate-800">
@@ -164,11 +141,11 @@ pub fn App() -> impl IntoView {
 
         <Router>
             <main>
-                <Routes fallback=|| view! { <ErrorPage /> }>
+                <Routes fallback=ErrorPage>
                     <Route path=StaticSegment("") view=HomePage/>
                 </Routes>
             </main>
-            <Footer />
+            <Footer/>
         </Router>
     }
 }
