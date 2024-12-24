@@ -109,7 +109,7 @@ fn MobileHomePage() -> impl IntoView {
 
 #[component]
 fn HomePage() -> impl IntoView {
-    let small = RwSignal::new(false);
+    let small = RwSignal::new(None);
 
     Effect::new(move || {
         let Some(width) = window()
@@ -122,16 +122,26 @@ fn HomePage() -> impl IntoView {
 
         // rustacean width plus the translation of 6.0
         if width < 755.0 {
-            small.set(true);
+            small.set(Some(true));
+        } else {
+            small.set(Some(false));
         }
     });
 
     view! {
         <div class="bg-black min-h-screen">
             <h1 class="text-6xl text-center text-white py-24 sm:text-8xl">ozpv</h1>
-            <Show when=move || small.get() fallback=DesktopHomePage>
-                <MobileHomePage />
-            </Show>
+            {move || small
+                .get()
+                .map_or(
+                    ().into_any(),
+                    |small_screen| if small_screen {
+                        view! { <MobileHomePage /> }.into_any()
+                    } else {
+                        view! { <DesktopHomePage /> }.into_any()
+                    },
+                )
+            }
             <div class="flex justify-center gap-5 pt-14">
                 <a href="https://github.com/ozpv" class="p-2 rounded-sm transition-all ease-in duration-150 hover:-translate-y-px hover:bg-slate-800">
                     <Icon icon={icondata::SiGithub} width="32" height="32" {..} class="text-white" />

@@ -15,13 +15,15 @@ leptos_axum = { version = "0.7.0", optional = true }
 leptos_meta = { version = "0.7.0" }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 tower = { version = "0.5", optional = true }
-tower-http = { version = "0.6", features = ["fs"], optional = true }
-wasm-bindgen = "=0.2.96"
+tower-http = { version = "0.6", features = ["compression-gzip", "fs", "trace"], optional = true }
+wasm-bindgen = "=0.2.99"
 thiserror = "2"
 http = "1"
 web-sys = { version = "0.3.7", features = ["DomRect"] } 
 leptos_icons = "0.4.0"
 icondata = "0.5.0"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
 
 [features]
 hydrate = ["leptos/hydrate"]
