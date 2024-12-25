@@ -1,8 +1,4 @@
-use leptos::{
-    ev, html,
-    prelude::*,
-    tachys::{dom::window, renderer::dom::Dom},
-};
+use leptos::{ev, html, leptos_dom::helpers, prelude::*};
 use leptos_icons::Icon;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -109,38 +105,30 @@ fn MobileHomePage() -> impl IntoView {
 
 #[component]
 fn HomePage() -> impl IntoView {
-    let small = RwSignal::new(None);
+    let small = RwSignal::new(false);
 
     Effect::new(move || {
-        let Some(width) = window()
+        let width = helpers::window()
             .inner_width()
             .expect("window to have a width")
             .as_f64()
-        else {
-            return;
-        };
+            .expect("Failed to parse as f64");
 
         // rustacean width plus the translation of 6.0
         if width < 755.0 {
-            small.set(Some(true));
-        } else {
-            small.set(Some(false));
+            small.set(true);
         }
     });
 
     view! {
         <div class="bg-black min-h-screen">
             <h1 class="text-6xl text-center text-white py-24 sm:text-8xl">ozpv</h1>
-            {move || small
-                .get()
-                .map_or(
-                    ().into_any(),
-                    |small_screen| if small_screen {
-                        view! { <MobileHomePage /> }.into_any()
-                    } else {
-                        view! { <DesktopHomePage /> }.into_any()
-                    },
-                )
+            {
+                move || if small.get() {
+                    view!{ <MobileHomePage />}.into_any()
+                } else {
+                    view!{ <DesktopHomePage />}.into_any()
+                }
             }
             <div class="flex justify-center gap-5 pt-14">
                 <a href="https://github.com/ozpv" class="p-2 rounded-sm transition-all ease-in duration-150 hover:-translate-y-px hover:bg-slate-800">
