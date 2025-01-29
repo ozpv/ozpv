@@ -119,15 +119,43 @@ async fn is_mobile() -> Result<bool, ServerFnError> {
 }
 
 #[component]
+fn HomePageView(small: bool) -> impl IntoView {
+    let small = RwSignal::new(small);
+
+    Effect::new(move || {
+        let width = helpers::window()
+            .inner_width()
+            .expect("window to have a width")
+            .as_f64()
+            .expect("Failed to parse as f64");
+
+        // rustacean width plus the translation of 6.0
+        if width < 755.0 {
+            small.set(true);
+        }
+    });
+
+    view! {
+        {
+            move || if small.get() {
+                MobileHomePage().into_any()
+            } else {
+                DesktopHomePage().into_any()
+            }
+        }
+    }
+}
+
+#[component]
 fn HomePage() -> impl IntoView {
     let mobile = OnceResource::new_blocking(is_mobile());
 
     let inital = move || {
         Suspend::new(async move {
             if mobile.await.unwrap_or(false) {
-                MobileHomePage().into_any()
+                view! { <HomePageView small=true /> }.into_any()
             } else {
-                DesktopHomePage().into_any()
+                view! { <HomePageView small=false /> }.into_any()
             }
         })
     };
