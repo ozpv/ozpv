@@ -103,33 +103,41 @@ fn MobileHomePage() -> impl IntoView {
     }
 }
 
+#[server]
+async fn is_mobile() -> Result<bool, ServerFnError> {
+    use http::header::{HeaderMap, USER_AGENT};
+    use leptos_axum::extract;
+    let mobile = extract::<HeaderMap>()
+        .await
+        .map_err(|_| ServerFnError::new("Failed to extract"))?
+        .get(USER_AGENT)
+        .ok_or_else(|| ServerFnError::new("Failed to get header"))?
+        .to_str()
+        .is_ok_and(|user_agent| user_agent.contains("Android") || user_agent.contains("iPhone"));
+
+    Ok(mobile)
+}
+
 #[component]
 fn HomePage() -> impl IntoView {
-    let small = RwSignal::new(false);
+    let mobile = OnceResource::new_blocking(is_mobile());
 
-    Effect::new(move || {
-        let width = helpers::window()
-            .inner_width()
-            .expect("window to have a width")
-            .as_f64()
-            .expect("Failed to parse as f64");
-
-        // rustacean width plus the translation of 6.0
-        if width < 755.0 {
-            small.set(true);
-        }
-    });
+    let inital = move || {
+        Suspend::new(async move {
+            if mobile.await.unwrap_or(false) {
+                MobileHomePage().into_any()
+            } else {
+                DesktopHomePage().into_any()
+            }
+        })
+    };
 
     view! {
         <div class="bg-black min-h-screen">
             <h1 class="text-6xl text-center text-white py-24 sm:text-8xl">ozpv</h1>
-            {
-                move || if small.get() {
-                    view!{ <MobileHomePage />}.into_any()
-                } else {
-                    view!{ <DesktopHomePage />}.into_any()
-                }
-            }
+            <Suspense fallback=|| ()>
+                {move || inital}
+            </Suspense>
             <div class="flex justify-center gap-5 pt-14">
                 <a href="https://github.com/ozpv" class="p-2 rounded-sm transition-all ease-in duration-150 hover:-translate-y-px hover:bg-slate-800">
                     <Icon icon={icondata::SiGithub} width="32" height="32" {..} class="text-white" />
