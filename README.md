@@ -10,7 +10,7 @@
 
 ###
 
-<p align="left">📚 I currently know fullstack web development<br>🎯 One of my goals is to learn embedded development/dsp in rust<br>🎲 Fun fact: I'm also a musician. My guess is I have ~5,000 fans worldwide (based on the distrokid stats).<br>You can take a listen at <a href="https://haemolacriaa.com/">haemolacriaa.com</a></p>
+<p align="left">📚 I currently know fullstack web development<br>🎯 One of my goals is to get into embedded development/dsp in rust<br>🎲 Fun fact: I'm also a musician. My guess is I have ~6,000 fans worldwide (based on the distrokid stats).<br>You can take a listen at <a href="https://haemolacriaa.com/">haemolacriaa.com</a></p>
 
 ###
 
